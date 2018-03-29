@@ -23,7 +23,7 @@ import config
 
 
 class LoloPublisher:
-    def __init__(self, frame_id='odom'):
+    def __init__(self, frame_id='map'):
         """
         a simple class to keep information about lolos fins.
         publishes coordinated fin movements when move_xxx methods are called
@@ -44,7 +44,7 @@ class LoloPublisher:
 
 
 
-    def yaw(self, direction, frame_id='odom'):
+    def yaw(self, direction, frame_id='map'):
         """
         + = move left
         """
@@ -65,14 +65,14 @@ class LoloPublisher:
         self.fin2pub.publish(out)
         self.fin3pub.publish(out)
 
-        if np.sign(out.data)== -1:
-            config.pprint('>>>',out.data)
-        elif np.sign(out.data)== 1:
-            config.pprint('<<<',out.data)
-        else:
-            config.pprint('---',out.data)
+        #  if np.sign(out.data)== -1:
+            #  config.pprint('>>>',out.data)
+        #  elif np.sign(out.data)== 1:
+            #  config.pprint('<<<',out.data)
+        #  else:
+            #  config.pprint('---',out.data)
 
-    def pitch(self,direction, frame_id='odom'):
+    def pitch(self,direction, frame_id='map'):
         """
         + = move up
         """
@@ -82,12 +82,12 @@ class LoloPublisher:
         out.data = direction
 
         self.backfinspub.publish(out)
-        if np.sign(out.data)==-1:
-            config.pprint('^^^',out.data)
-        elif np.sign(out.data)==1:
-            config.pprint('vvv',out.data)
-        else:
-            config.pprint('---',out.data)
+        #  if np.sign(out.data)==-1:
+            #  config.pprint('^^^',out.data)
+        #  elif np.sign(out.data)==1:
+            #  config.pprint('vvv',out.data)
+        #  else:
+            #  config.pprint('---',out.data)
 
 
 class LineController:
@@ -109,7 +109,7 @@ class LineController:
         rospy.Subscriber(pose_topic, Odometry, self.update_pose)
 
         self._current_line = None
-        self._frame_id = 'odom'
+        self._frame_id = 'map'
 
         self._yaw_pid = Pid.PID(*config.LOLO_YAW_PID)
         self._pitch_pid = Pid.PID(*config.LOLO_PITCH_PID)
@@ -123,6 +123,9 @@ class LineController:
 
         # disable pitch control
         self._no_pitch = no_pitch
+
+        # distance from seabed to keep
+        self._target_z = None
 
     def update_pose(self, data):
         datapos = data.pose.pose.position
@@ -141,6 +144,10 @@ class LineController:
         self.ori = [x,y,z,w]
 
         self._frame_id = data.header.frame_id
+
+        if self._target_z is None:
+            self._target_z = z + config.Z_BUFFER
+            config.pprint('set target z to:',self._target_z)
 
 
     def update_line(self, data):
@@ -166,12 +173,16 @@ class LineController:
     def update_curve(self, data):
         # data should contain Path, with multiple,  that represent a discretized curve
         # we will only use the x,y component for now
-        line = None
 
         points = []
         for p in data.poses:
             points.append(p.pose.position)
 
+        if len(points) < 1:
+            print('No curve received')
+            return
+
+        line = None
         # the segment intersects a circle of radius r if
         # the first point is closer than r and the second is further
         # we also want the 'last' one that intersects, not the first
@@ -185,31 +196,29 @@ class LineController:
             p1d = G.euclid_distance(selfpos, p1[:2])
             p2d = G.euclid_distance(selfpos, p2[:2])
             if p1d > config.LOOK_AHEAD_R:
-                print('p1 outside')
+                #  print('p1d:',p1d,'p2d:',p2d)
                 # the first point is inside, check the second one
                 if p2d < config.LOOK_AHEAD_R:
-                    print('p2 inside')
                     # we are intersecting!
-                    print("Success: ", line)
                     line = (p1,p2)
-                else:
-                    print('p2d too large:',p2d)
-            else:
-                print('p1d too small:',p1d)
+
+        if line is None:
+            print('No segment in range, using first segment')
+            p1 = (points[0].x,points[0].y,points[0].z)
+            p2 = (points[1].x,points[1].y,points[1].z)
+            line = (p1,p2)
 
         # set these to be used later
         self._current_line = line
         self._frame_id = data.header.frame_id
 
+
+
         # elongate the line for visualization purposes
-        if line is None:
-            return
-
-
         x1,y1,z1 = line[0]
         x2,y2,z2 = line[1]
         slope = (y2-y1)/(x2-x1)
-        d = 10
+        d = -5
         x2 += d
         y2 += d*slope
         x1 -= d
@@ -242,7 +251,6 @@ class LineController:
         if self._current_line is None:
             return
         # use a pid for yaw and another for pitch.
-        # bang-bang control for the fins
 
         # first the yaw, find the yaw error
         # just project the 3D positions to z=0 plane for the yaw control
@@ -251,46 +259,45 @@ class LineController:
         # pitch can use either xz OR yz.
         yaw_pos = np.array(self.pos[:2])
         yaw_line_p1 = np.array(self._current_line[0][:2])
-        yaw_line_p2 = np.array(self._current_line[1][:2])
 
-        yaw_error = G.ptToLineSegment(yaw_line_p1, yaw_line_p2, yaw_pos)
+        current_yaw = G.quat_to_yaw(self.ori) #% (2*np.pi)
+        yaw_error = -G.directed_angle([np.cos(current_yaw), np.sin(current_yaw)], yaw_line_p1-yaw_pos)# % (2*np.pi)
+
         if not np.isnan(yaw_error):
-            # this only gives the magnitude of the error, not the 'side' of it
-            x,y = yaw_pos
-            x1,y1 = yaw_line_p1
-            x2,y2 = yaw_line_p2
-            s = (x-x1)*(y2-y1)-(y-y1)*(x2-x1)
-            # negative s = line is to the right
-            yaw_correction = np.sign(s)*self._yaw_pid.update(yaw_error, dt)
+            yaw_correction = self._yaw_pid.update(yaw_error, dt)
             self._lolopub.yaw(yaw_correction, self._frame_id)
 
         if not self._no_pitch:
             x0,y0,z0 = self.pos
-            x1,y1,z1 = self._current_line[0]
-            x2,y2,z2 = self._current_line[1]
+            #  x1,y1,z1 = self._current_line[0]
+            #  x2,y2,z2 = self._current_line[1]
+#
+            #  # create a plane from the current line.
+            #  pa = np.array([x1,y1,z1])
+            #  pb = np.array([x2,y2,z2])
+            #  # put a point near the middle somewhere
+            #  pc = np.array([x1+10,y1+10,(z1+z2)/2])
+            #  # make a plane out of these 3 points
+            #  ab = pa-pb
+            #  ac = pa-pc
+            #  xx = np.cross(ab,ac)
+            #  d = xx[0]*pa[0] + xx[1]*pa[1] + xx[2]*pa[2]
+            #  # this function returns +1 if the point is above the plane
+            #  above = lambda pp: -np.sign(xx[0]*pp[0]+xx[1]*pp[1]+xx[2]*pp[2]-d)
+#
+            #  # this gives the magnitude of the error
+            #  pitch_error = np.abs((xx[0]*x0+xx[1]*y0+xx[2]*z0+d)/np.sqrt(xx[0]**2+xx[1]**2+xx[2]**2))
 
-            # create a plane from the current line.
-            pa = np.array([x1,y1,z1])
-            pb = np.array([x2,y2,z2])
-            # put a point near the middle somewhere
-            pc = np.array([x1+10,y1+10,(z1+z2)/2])
-            # make a plane out of these 3 points
-            ab = pa-pb
-            ac = pa-pc
-            xx = np.cross(ab,ac)
-            d = xx[0]*pa[0] + xx[1]*pa[1] + xx[2]*pa[2]
-            # this function returns +1 if the point is above the plane
-            above = lambda pp: -np.sign(xx[0]*pp[0]+xx[1]*pp[1]+xx[2]*pp[2]-d)
 
-            # this gives the magnitude of the error
-            pitch_error = np.abs((xx[0]*x0+xx[1]*y0+xx[2]*z0+d)/np.sqrt(xx[0]**2+xx[1]**2+xx[2]**2))
+            if self._target_z is not None:
+                pitch_error = self._target_z - z0
+                config.pprint('current z:',z0,'_target_z:',self._target_z,'pitch_error:',pitch_error)
+                # this only gives the magnitude of the error, not the 'side' of it
+                pitch_correction = self._pitch_pid.update(pitch_error, dt)
 
-            # this only gives the magnitude of the error, not the 'side' of it
-            pitch_correction = self._pitch_pid.update(pitch_error, dt)
-
-            # combine side with magnitude for control
-            control = above(self.pos)*pitch_correction
-            self._lolopub.pitch(control, self._frame_id)
+                # combine side with magnitude for control
+                #  control = above(self.pos)*pitch_correction
+                self._lolopub.pitch(pitch_correction, self._frame_id)
 
 
 
@@ -303,11 +310,11 @@ if __name__=='__main__':
 
     rospy.init_node('line_controller', anonymous=True)
 
+    no_pitch = False
     args = sys.argv
-    if args[1] == 'nopitch':
-        no_pitch = True
-    else:
-        no_pitch = False
+    if len(args) > 1:
+        if args[1] == 'nopitch':
+            no_pitch = True
 
     pose_topic = config.POSE_TOPIC
     line_topic = config.LINE_TOPIC
