@@ -147,7 +147,7 @@ class LineController:
 
         if self._target_z is None:
             self._target_z = z + config.Z_BUFFER
-            config.pprint('set target z to:',self._target_z)
+            # config.pprint('set target z to:',self._target_z)
 
 
     def update_line(self, data):
@@ -207,6 +207,12 @@ class LineController:
             p1 = (points[0].x,points[0].y,points[0].z)
             p2 = (points[1].x,points[1].y,points[1].z)
             line = (p1,p2)
+
+        p1,p2 = line
+        p1 = list(p1)
+        p1[0] += 3
+        p1[1] += 3
+        line = [p1,p2]
 
         # set these to be used later
         self._current_line = line
@@ -291,7 +297,7 @@ class LineController:
 
             if self._target_z is not None:
                 pitch_error = self._target_z - z0
-                config.pprint('current z:',z0,'_target_z:',self._target_z,'pitch_error:',pitch_error)
+                # config.pprint('current z:',z0,'_target_z:',self._target_z,'pitch_error:',pitch_error)
                 # this only gives the magnitude of the error, not the 'side' of it
                 pitch_correction = self._pitch_pid.update(pitch_error, dt)
 

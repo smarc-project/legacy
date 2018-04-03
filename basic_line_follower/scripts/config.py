@@ -45,7 +45,7 @@ LOOK_AHEAD_R = 10
 
 # height to add to the starting height of the auv
 # will try to control pitch so that target_z = init_height + z_buffer
-Z_BUFFER = 1
+Z_BUFFER = 3
 
 # the topic to both publish and subscribe to
 LINE_TOPIC = '/lolo_auv/lolo_auv/camera/pipeline_locator'
