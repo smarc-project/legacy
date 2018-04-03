@@ -65,7 +65,7 @@ POSE_TOPIC = 'lolo_auv/navigation/pose_estimate'
 
 # PID gain values for the LOLO auv. Hand-made!
 LOLO_YAW_PID = [5, 0, 0.2]
-LOLO_PITCH_PID = [1, 0.1, 5.5]
+LOLO_PITCH_PID = [3, 0, 15]
 
 DEBUG_LINE_TOPIC = 'lolo_auv/debug_line'
 
