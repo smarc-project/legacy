@@ -59,13 +59,13 @@ LOLO_BACKFIN_INPUT = 'lolo_auv/back_fins/0/input'
 
 # where to get the Odometry object that contains the pose of the AUV
 #POSE_TOPIC = 'lolo_auv/pose_gt'
-#POSE_TOPIC = 'lolo_auv/navigation/pose_estimate'
-POSE_TOPIC = 'gt_in_odom'
+POSE_TOPIC = 'lolo_auv/navigation/pose_estimate'
+#POSE_TOPIC = 'gt_in_odom'
 #  POSE_TOPIC = 'lolo_auv/pose_odom'
 
 # PID gain values for the LOLO auv. Hand-made!
 LOLO_YAW_PID = [5, 0, 0.2]
-LOLO_PITCH_PID = [1, 0.1, 5.5]
+LOLO_PITCH_PID = [3, 0, 15]
 
 DEBUG_LINE_TOPIC = 'lolo_auv/debug_line'
 
