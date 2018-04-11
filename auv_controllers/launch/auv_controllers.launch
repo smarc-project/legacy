@@ -1,0 +1,6 @@
+<launch>
+	  	<arg name="namespace" default="lolo_auv"/>
+
+        <!-- AUV Control components -->
+        
+</launch>
