@@ -23,7 +23,7 @@ import config
 
 
 class LoloPublisher:
-    def __init__(self, frame_id='map'):
+    def __init__(self, frame_id='lolo_auv_1_map'):
         """
         a simple class to keep information about lolos fins.
         publishes coordinated fin movements when move_xxx methods are called
@@ -44,7 +44,7 @@ class LoloPublisher:
 
 
 
-    def yaw(self, direction, frame_id='map'):
+    def yaw(self, direction, frame_id='lolo_auv_1_map'):
         """
         + = move left
         """
@@ -52,7 +52,7 @@ class LoloPublisher:
 
         out = FloatStamped()
         out.header.frame_id = frame_id
-        out.data = -1*direction
+        out.data = 1*direction
 
         self.fin0pub.publish(out)
         self.fin1pub.publish(out)
@@ -60,7 +60,7 @@ class LoloPublisher:
         # the control for these fins are inverted for some reason
         out = FloatStamped()
         out.header.frame_id = frame_id
-        out.data = direction # * -1
+        out.data = direction * -1
 
         self.fin2pub.publish(out)
         self.fin3pub.publish(out)
@@ -72,14 +72,14 @@ class LoloPublisher:
         #  else:
             #  config.pprint('---',out.data)
 
-    def pitch(self,direction, frame_id='map'):
+    def pitch(self,direction, frame_id='lolo_auv_1_map'):
         """
         + = move up
         """
         #  direction = np.sign(direction)
         out = FloatStamped()
         out.header.frame_id = frame_id
-        out.data = direction
+        out.data = -1 * direction
 
         self.backfinspub.publish(out)
         #  if np.sign(out.data)==-1:
@@ -109,7 +109,7 @@ class LineController:
         rospy.Subscriber(pose_topic, Odometry, self.update_pose)
 
         self._current_line = None
-        self._frame_id = 'map'
+        self._frame_id = 'lolo_auv_1_map'
 
         self._yaw_pid = Pid.PID(*config.LOLO_YAW_PID)
         self._pitch_pid = Pid.PID(*config.LOLO_PITCH_PID)
@@ -143,7 +143,7 @@ class LineController:
 
         self.ori = [x,y,z,w]
 
-        self._frame_id = data.header.frame_id
+        # self._frame_id = data.header.frame_id
 
         if self._target_z is None:
             self._target_z = z + config.Z_BUFFER
@@ -168,7 +168,7 @@ class LineController:
         self._current_line = (l1, l2)
 
         # also extract the frame id, since we will need it when publishing control signals
-        self._frame_id = data.header.frame_id
+        # self._frame_id = data.header.frame_id
 
     def update_curve(self, data):
         # data should contain Path, with multiple,  that represent a discretized curve
@@ -195,8 +195,9 @@ class LineController:
 
             p1d = G.euclid_distance(selfpos, p1[:2])
             p2d = G.euclid_distance(selfpos, p2[:2])
+            #print(p1d, p2d)
             if p1d > config.LOOK_AHEAD_R:
-                #  print('p1d:',p1d,'p2d:',p2d)
+                print('p1d:',p1d,'p2d:',p2d)
                 # the first point is inside, check the second one
                 if p2d < config.LOOK_AHEAD_R:
                     # we are intersecting!
@@ -210,13 +211,13 @@ class LineController:
 
         p1,p2 = line
         p1 = list(p1)
-        p1[0] += 3
-        p1[1] += 3
+        #p1[0] += 3
+        #p1[1] += 3
         line = [p1,p2]
 
         # set these to be used later
         self._current_line = line
-        self._frame_id = data.header.frame_id
+        # self._frame_id = data.header.frame_id
 
 
 
@@ -316,7 +317,7 @@ if __name__=='__main__':
 
     rospy.init_node('line_controller', anonymous=True)
 
-    no_pitch = False
+    no_pitch = True
     args = sys.argv
     if len(args) > 1:
         if args[1] == 'nopitch':
