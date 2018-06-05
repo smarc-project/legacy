@@ -2,5 +2,6 @@
 	  	<arg name="namespace" default="lolo_auv"/>
 
         <!-- AUV Control components -->
+        <node name="line_follower" pkg="basic_line_follower" type="line_controller.py" respawn="false" output="screen" args=""/>
         
 </launch>

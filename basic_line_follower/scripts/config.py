@@ -28,7 +28,7 @@ if DEBUG:
 WAYPOINTS_FILE = 'waypoints.csv'
 
 # Hz.
-UPDATE_FREQ = 30
+UPDATE_FREQ = 20
 import math
 RADTODEG = 180/math.pi
 
@@ -51,15 +51,15 @@ Z_BUFFER = 3
 LINE_TOPIC = '/lolo_auv/lolo_auv/camera/pipeline_locator'
 
 # fin topics
-LOLO_FIN0_INPUT = 'lolo_auv/fins/0/input'
-LOLO_FIN1_INPUT = 'lolo_auv/fins/1/input'
-LOLO_FIN2_INPUT = 'lolo_auv/fins/2/input'
-LOLO_FIN3_INPUT = 'lolo_auv/fins/3/input'
-LOLO_BACKFIN_INPUT = 'lolo_auv/back_fins/0/input'
+LOLO_FIN0_INPUT = 'lolo_auv_1/fins/0/input'
+LOLO_FIN1_INPUT = 'lolo_auv_1/fins/1/input'
+LOLO_FIN2_INPUT = 'lolo_auv_1/fins/2/input'
+LOLO_FIN3_INPUT = 'lolo_auv_1/fins/3/input'
+LOLO_BACKFIN_INPUT = 'lolo_auv_1/back_fins/0/input'
 
 # where to get the Odometry object that contains the pose of the AUV
-#POSE_TOPIC = 'lolo_auv/pose_gt'
-POSE_TOPIC = 'lolo_auv/navigation/pose_estimate'
+#POSE_TOPIC = 'lolo_auv_1/pose_gt'
+POSE_TOPIC = 'lolo_auv_1/navigation/pose_estimate'
 #POSE_TOPIC = 'gt_in_odom'
 #  POSE_TOPIC = 'lolo_auv/pose_odom'
 
