@@ -1,0 +1,72 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+# vim:fenc=utf-8
+#
+# Author: Ozer Ozkahraman (ozkahramanozer@gmail.com)
+# Date: 2018-02-16
+
+
+"""
+configs for the line follower
+"""
+
+DEBUG = True
+if DEBUG:
+    import pprint
+    pp = pprint.PrettyPrinter()
+    def pprint(*ss):
+        global pp
+        if type(ss) == list:
+            for s in ss:
+                pp.pprint(s)
+        else:
+            pp.pprint(ss)
+
+
+
+# a csv file relative to line_planner.py
+WAYPOINTS_FILE = 'waypoints.csv'
+
+# Hz.
+UPDATE_FREQ = 20
+import math
+RADTODEG = 180/math.pi
+
+# when the AUV is this close to the end of a line, it will switch to the next one
+# XY is for yaw, Z for pitch. Both need to be satisfied for the line to change
+# pitch control is very slow, so we might want them to be separate
+LINE_END_XY_THRESHOLD = 1
+LINE_END_Z_THRESHOLD = 1
+# how many meters to 'look ahead' in the curve
+# to follow. Imagine a circle around the AUV
+# with this radius, intersect with the curve.
+# this is that radius
+LOOK_AHEAD_R = 10
+
+# height to add to the starting height of the auv
+# will try to control pitch so that target_z = init_height + z_buffer
+Z_BUFFER = 3
+
+# the topic to both publish and subscribe to
+LINE_TOPIC = '/lolo_auv/lolo_auv/camera/pipeline_locator'
+
+# fin topics
+LOLO_FIN0_INPUT = 'lolo_auv_1/fins/0/input'
+LOLO_FIN1_INPUT = 'lolo_auv_1/fins/1/input'
+LOLO_FIN2_INPUT = 'lolo_auv_1/fins/2/input'
+LOLO_FIN3_INPUT = 'lolo_auv_1/fins/3/input'
+LOLO_BACKFIN_INPUT = 'lolo_auv_1/back_fins/0/input'
+
+# where to get the Odometry object that contains the pose of the AUV
+#POSE_TOPIC = 'lolo_auv_1/pose_gt'
+POSE_TOPIC = 'lolo_auv_1/navigation/pose_estimate'
+#POSE_TOPIC = 'gt_in_odom'
+#  POSE_TOPIC = 'lolo_auv/pose_odom'
+
+# PID gain values for the LOLO auv. Hand-made!
+LOLO_YAW_PID = [5, 0, 0.2]
+LOLO_PITCH_PID = [3, 0, 15]
+
+DEBUG_LINE_TOPIC = 'lolo_auv/debug_line'
+
+
